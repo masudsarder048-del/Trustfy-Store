@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Reselling Site</title>
+</head>
+<body>
+
+<h3>Register</h3>
+<input id="rEmail" placeholder="Email">
+<input id="rPass" type="password" placeholder="Password">
+<button onclick="register()">Register</button>
+
+<hr>
+
+<h3>Login</h3>
+<input id="lEmail" placeholder="Email">
+<input id="lPass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+
+<p id="msg"></p>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const supabase = supabasejs.createClient(
+  "sb_publishable_2vcCYHfcBeQnXPPjkKBIHw_Ap0_cCUF",
+  "sb_secret_Nf4m1A2KtGLGCzmlVKrbww_Gg4_t1_R"
+);
+
+async function register(){
+  const { data, error } = await supabase.auth.signUp({
+    email: rEmail.value,
+    password: rPass.value
+  });
+
+  if(error){
+    msg.innerText = error.message;
+    return;
+  }
+
+  await supabase.from("users").insert({
+    id: data.user.id,
+    email: rEmail.value,
+    role: "reseller",
+    status: "pending"
+  });
+
+  msg.innerText = "Registered! Wait for admin approval.";
+}
+
+async function login(){
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: lEmail.value,
+    password: lPass.value
+  });
+
+  if(error){
+    msg.innerText = error.message;
+    return;
+  }
+
+  const { data: user } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", data.user.id)
+    .single();
+
+  if(user.status !== "active"){
+    msg.innerText = "Account not active";
+    await supabase.auth.signOut();
+  } else {
+    msg.innerText = "Login success!";
+  }
+}
+</script>
+
+</body>
+</html>
